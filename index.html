@@ -140,7 +140,7 @@
     margin-top: 0.1rem;
   }
 
-  .ingredient .kcal-tag{
+  .ingredient .cal-tag{
     font-family: var(--mono);
     font-size: 0.72rem;
     color: var(--ink-soft);
@@ -263,12 +263,12 @@
     font-weight: bold;
   }
 
-  .totals-list li.kcal-row .value{
+  .totals-list li.cal-row .value{
     font-size: 1.5rem;
     color: #f2b79a;
   }
 
-  .totals-list li.kcal-row .label{
+  .totals-list li.cal-row .label{
     font-size: 0.95rem;
     color: var(--paper);
   }
@@ -417,7 +417,7 @@
     <div class="count" id="item-count">0 items on your plate</div>
 
     <ul class="totals-list">
-      <li class="kcal-row">
+      <li class="cal-row">
         <span class="label">Calories</span>
         <span class="value"><span id="total-calories">0</span> cal</span>
       </li>
@@ -470,7 +470,7 @@
                   "images" folder next to this index.html), OR
                   leave as "" to show the emoji fallback instead
        emoji    - shown if "image" is empty or fails to load
-       calories - kcal, PER ONE SERVING (as described above)
+       calories - cal, PER ONE SERVING (as described above)
        protein  - grams, per one serving
        carbs    - grams, per one serving
        fat      - grams, per one serving
@@ -549,9 +549,9 @@
       serving.className = "serving";
       serving.textContent = ing.serving ? `per ${ing.serving}` : "";
 
-      const kcalTag = document.createElement("div");
-      kcalTag.className = "kcal-tag";
-      kcalTag.textContent = `${ing.calories} kcal`;
+      const calTag = document.createElement("div");
+      calTag.className = "cal-tag";
+      calTag.textContent = `${ing.calories} cal`;
 
       // Quantity stepper: minus button, quantity display, plus button
       const stepper = document.createElement("div");
@@ -582,7 +582,7 @@
       card.appendChild(thumb);
       card.appendChild(name);
       if (ing.serving) card.appendChild(serving);
-      card.appendChild(kcalTag);
+      card.appendChild(calTag);
       card.appendChild(stepper);
 
       // Clicking anywhere else on the card adds one serving
@@ -761,7 +761,7 @@
       ctx.font = `${12.5 * scale}px 'Courier New', monospace`;
       ctx.fillStyle = inkColor;
       ctx.textAlign = "right";
-      ctx.fillText(`${Math.round(item.calories)} kcal`, width - paddingX, y);
+      ctx.fillText(`${Math.round(item.calories)} cal`, width - paddingX, y);
 
       ctx.font = `${10 * scale}px 'Courier New', monospace`;
       ctx.fillStyle = inkSoft;
@@ -793,7 +793,7 @@
     ctx.font = `bold ${24 * scale}px 'Courier New', monospace`;
     ctx.fillStyle = accent;
     ctx.textAlign = "right";
-    ctx.fillText(`${Math.round(calories)} kcal`, width - paddingX, y);
+    ctx.fillText(`${Math.round(calories)} cal`, width - paddingX, y);
 
     y += 26 * scale;
     ctx.font = `${13 * scale}px 'Courier New', monospace`;
