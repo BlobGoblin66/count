@@ -133,11 +133,18 @@
     line-height: 1.2;
   }
 
+  .ingredient .serving{
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-top: 0.1rem;
+  }
+
   .ingredient .kcal-tag{
     font-family: var(--mono);
     font-size: 0.72rem;
     color: var(--ink-soft);
-    margin-top: 0.15rem;
+    margin-top: 0.25rem;
   }
 
   .ingredient.selected{
@@ -147,15 +154,62 @@
   }
 
   .ingredient.selected::after{
-    content: "✓ added";
+    content: "on plate";
     position: absolute;
     top: 6px;
     right: 8px;
     font-family: var(--mono);
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     color: var(--accent);
     background: var(--selected);
     padding: 0 3px;
+  }
+
+  /* ---- Quantity stepper ---- */
+
+  .stepper{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+    width: 100%;
+  }
+
+  .stepper button{
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .stepper button:hover{
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .stepper button:disabled{
+    opacity: 0.3;
+    cursor: default;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .stepper .qty{
+    font-family: var(--mono);
+    font-weight: bold;
+    font-size: 0.95rem;
+    min-width: 1.4em;
+    text-align: center;
   }
 
   /* ---- Totals panel ---- */
@@ -248,6 +302,103 @@
     cursor: default;
   }
 
+  #finalize-btn{
+    margin-top: 0.6rem;
+    width: 100%;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: var(--paper);
+    padding: 0.7rem;
+    font-family: Georgia, serif;
+    font-size: 0.92rem;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+
+  #finalize-btn:hover{
+    background: #b84a35;
+  }
+
+  #finalize-btn:disabled{
+    opacity: 0.35;
+    cursor: default;
+    background: #6b5a4e;
+    border-color: #6b5a4e;
+  }
+
+  /* ---- Finalize modal ---- */
+
+  #finalize-overlay{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 16, 12, 0.75);
+    z-index: 100;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 2rem 1rem;
+  }
+
+  #finalize-overlay.open{
+    display: flex;
+  }
+
+  .finalize-modal{
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    max-width: 420px;
+    width: 100%;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .finalize-modal h3{
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+  }
+
+  #finalize-canvas{
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .finalize-actions{
+    display: flex;
+    gap: 0.6rem;
+  }
+
+  .finalize-actions a, .finalize-actions button{
+    flex: 1;
+    padding: 0.65rem;
+    font-family: Georgia, serif;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    border: 2px solid var(--ink);
+  }
+
+  .finalize-actions a{
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .finalize-actions button{
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .finalize-hint{
+    font-size: 0.75rem;
+    color: var(--ink-soft);
+    margin-top: 0.7rem;
+  }
+
 </style>
 </head>
 <body>
@@ -287,8 +438,21 @@
     <div id="selected-items">Nothing selected yet.</div>
 
     <button id="reset-btn" disabled>Clear plate</button>
+    <button id="finalize-btn" disabled>Finalize menu</button>
   </aside>
 
+</div>
+
+<div id="finalize-overlay">
+  <div class="finalize-modal">
+    <h3>Your meal summary</h3>
+    <canvas id="finalize-canvas"></canvas>
+    <div class="finalize-actions">
+      <a id="download-link" download="meal-summary.png">Save image</a>
+      <button id="close-finalize">Close</button>
+    </div>
+    <div class="finalize-hint">On phone: tap "Save image", or press and hold the image above to save it to your photos.</div>
+  </div>
 </div>
 
 <script>
@@ -300,41 +464,43 @@
 
        id       - unique short string, no spaces
        name     - display name
+       serving  - text shown under the name describing ONE unit,
+                  e.g. "1 large" or "100g" or "1 slice"
        image    - path to an image file (put images in an
                   "images" folder next to this index.html), OR
                   leave as "" to show the emoji fallback instead
        emoji    - shown if "image" is empty or fails to load
-       calories - kcal, per the portion you're tracking
-       protein  - grams
-       carbs    - grams
-       fat      - grams
+       calories - kcal, PER ONE SERVING (as described above)
+       protein  - grams, per one serving
+       carbs    - grams, per one serving
+       fat      - grams, per one serving
 
-     Nutrition values are per whatever unit/portion you want
-     (e.g. "per 100g" or "per 1 egg") - just be consistent about
-     what portion size each image represents, since clicking adds
-     exactly one portion's worth of values.
+     Nutrition values are per ONE serving. If someone sets the
+     quantity to 2, all four values are simply doubled - so make
+     sure "serving" accurately describes what one unit means.
      ============================================================ */
 
   const INGREDIENTS = [
-    { id: "egg",        name: "Egg (1 large)",     image: "", emoji: "🥚", calories: 72,  protein: 6.3, carbs: 0.4,  fat: 4.8 },
-    { id: "chicken",    name: "Chicken Breast",    image: "", emoji: "🍗", calories: 165, protein: 31,  carbs: 0,    fat: 3.6 },
-    { id: "rice",       name: "Rice, cooked",      image: "", emoji: "🍚", calories: 206, protein: 4.3, carbs: 45,   fat: 0.4 },
-    { id: "avocado",    name: "Avocado",           image: "", emoji: "🥑", calories: 240, protein: 3,   carbs: 12,   fat: 22  },
-    { id: "banana",     name: "Banana",            image: "", emoji: "🍌", calories: 105, protein: 1.3, carbs: 27,   fat: 0.4 },
-    { id: "almonds",    name: "Almonds (28g)",     image: "", emoji: "🌰", calories: 164, protein: 6,   carbs: 6,    fat: 14  },
-    { id: "broccoli",   name: "Broccoli",          image: "", emoji: "🥦", calories: 55,  protein: 3.7, carbs: 11,   fat: 0.6 },
-    { id: "salmon",     name: "Salmon Fillet",     image: "", emoji: "🐟", calories: 208, protein: 20,  carbs: 0,    fat: 13  },
-    { id: "bread",      name: "Bread (1 slice)",   image: "", emoji: "🍞", calories: 79,  protein: 3.1, carbs: 14,   fat: 1   },
-    { id: "cheese",     name: "Cheddar Cheese",    image: "", emoji: "🧀", calories: 113, protein: 7,   carbs: 0.4,  fat: 9.3 },
-    { id: "apple",      name: "Apple",             image: "", emoji: "🍎", calories: 95,  protein: 0.5, carbs: 25,   fat: 0.3 },
-    { id: "peanutbutter", name: "Peanut Butter (2tbsp)", image: "", emoji: "🥜", calories: 188, protein: 8, carbs: 6, fat: 16 },
+    { id: "egg",        name: "Egg",              serving: "1 large",   image: "", emoji: "🥚", calories: 72,  protein: 6.3, carbs: 0.4,  fat: 4.8 },
+    { id: "chicken",    name: "Chicken Breast",    serving: "100g",      image: "", emoji: "🍗", calories: 165, protein: 31,  carbs: 0,    fat: 3.6 },
+    { id: "rice",       name: "Rice, cooked",      serving: "100g",      image: "", emoji: "🍚", calories: 206, protein: 4.3, carbs: 45,   fat: 0.4 },
+    { id: "avocado",    name: "Avocado",           serving: "1 medium",  image: "", emoji: "🥑", calories: 240, protein: 3,   carbs: 12,   fat: 22  },
+    { id: "banana",     name: "Banana",            serving: "1 medium",  image: "", emoji: "🍌", calories: 105, protein: 1.3, carbs: 27,   fat: 0.4 },
+    { id: "almonds",    name: "Almonds",           serving: "28g",       image: "", emoji: "🌰", calories: 164, protein: 6,   carbs: 6,    fat: 14  },
+    { id: "broccoli",   name: "Broccoli",          serving: "100g",      image: "", emoji: "🥦", calories: 55,  protein: 3.7, carbs: 11,   fat: 0.6 },
+    { id: "salmon",     name: "Salmon Fillet",     serving: "100g",      image: "", emoji: "🐟", calories: 208, protein: 20,  carbs: 0,    fat: 13  },
+    { id: "bread",      name: "Bread",             serving: "1 slice",   image: "", emoji: "🍞", calories: 79,  protein: 3.1, carbs: 14,   fat: 1   },
+    { id: "cheese",     name: "Cheddar Cheese",    serving: "1 slice",   image: "", emoji: "🧀", calories: 113, protein: 7,   carbs: 0.4,  fat: 9.3 },
+    { id: "apple",      name: "Apple",             serving: "1 medium",  image: "", emoji: "🍎", calories: 95,  protein: 0.5, carbs: 25,   fat: 0.3 },
+    { id: "peanutbutter", name: "Peanut Butter",   serving: "2 tbsp",    image: "", emoji: "🥜", calories: 188, protein: 8, carbs: 6, fat: 16 },
   ];
 
   /* ============================================================
      APP LOGIC — you shouldn't need to touch anything below this
      ============================================================ */
 
-  const selected = new Set();
+  // Maps ingredient id -> quantity currently on the plate (0 = not selected)
+  const quantities = {};
 
   const grid = document.getElementById("ingredient-grid");
   const totalCaloriesEl = document.getElementById("total-calories");
@@ -344,6 +510,11 @@
   const itemCountEl = document.getElementById("item-count");
   const selectedItemsEl = document.getElementById("selected-items");
   const resetBtn = document.getElementById("reset-btn");
+  const finalizeBtn = document.getElementById("finalize-btn");
+  const finalizeOverlay = document.getElementById("finalize-overlay");
+  const finalizeCanvas = document.getElementById("finalize-canvas");
+  const downloadLink = document.getElementById("download-link");
+  const closeFinalizeBtn = document.getElementById("close-finalize");
 
   function renderGrid(){
     grid.innerHTML = "";
@@ -373,45 +544,88 @@
       name.className = "name";
       name.textContent = ing.name;
 
+      const serving = document.createElement("div");
+      serving.className = "serving";
+      serving.textContent = ing.serving ? `per ${ing.serving}` : "";
+
       const kcalTag = document.createElement("div");
       kcalTag.className = "kcal-tag";
       kcalTag.textContent = `${ing.calories} kcal`;
 
+      // Quantity stepper: minus button, quantity display, plus button
+      const stepper = document.createElement("div");
+      stepper.className = "stepper";
+      stepper.addEventListener("click", (e) => e.stopPropagation()); // don't let clicks bubble to the card
+
+      const minusBtn = document.createElement("button");
+      minusBtn.type = "button";
+      minusBtn.textContent = "−";
+      minusBtn.setAttribute("aria-label", `Remove one ${ing.name}`);
+
+      const qtyDisplay = document.createElement("span");
+      qtyDisplay.className = "qty";
+      qtyDisplay.textContent = "0";
+
+      const plusBtn = document.createElement("button");
+      plusBtn.type = "button";
+      plusBtn.textContent = "+";
+      plusBtn.setAttribute("aria-label", `Add one ${ing.name}`);
+
+      minusBtn.addEventListener("click", () => changeQuantity(ing.id, -1, card, qtyDisplay, minusBtn));
+      plusBtn.addEventListener("click", () => changeQuantity(ing.id, 1, card, qtyDisplay, minusBtn));
+
+      stepper.appendChild(minusBtn);
+      stepper.appendChild(qtyDisplay);
+      stepper.appendChild(plusBtn);
+
       card.appendChild(thumb);
       card.appendChild(name);
+      if (ing.serving) card.appendChild(serving);
       card.appendChild(kcalTag);
+      card.appendChild(stepper);
 
-      card.addEventListener("click", () => toggleIngredient(ing.id, card));
+      // Clicking anywhere else on the card adds one serving
+      card.addEventListener("click", () => changeQuantity(ing.id, 1, card, qtyDisplay, minusBtn));
+
+      minusBtn.disabled = true;
 
       grid.appendChild(card);
     });
   }
 
-  function toggleIngredient(id, cardEl){
-    if (selected.has(id)){
-      selected.delete(id);
-      cardEl.classList.remove("selected");
-      cardEl.setAttribute("aria-pressed", "false");
-    } else {
-      selected.add(id);
+  function changeQuantity(id, delta, cardEl, qtyDisplayEl, minusBtnEl){
+    const current = quantities[id] || 0;
+    const next = Math.max(0, current + delta);
+    quantities[id] = next;
+
+    qtyDisplayEl.textContent = next;
+    minusBtnEl.disabled = next === 0;
+
+    if (next > 0){
       cardEl.classList.add("selected");
       cardEl.setAttribute("aria-pressed", "true");
+    } else {
+      cardEl.classList.remove("selected");
+      cardEl.setAttribute("aria-pressed", "false");
     }
+
     updateTotals();
   }
 
   function updateTotals(){
     let calories = 0, protein = 0, carbs = 0, fat = 0;
-    const names = [];
+    let itemCount = 0;
+    const summary = [];
 
-    selected.forEach(id => {
-      const ing = INGREDIENTS.find(i => i.id === id);
-      if (!ing) return;
-      calories += ing.calories;
-      protein += ing.protein;
-      carbs += ing.carbs;
-      fat += ing.fat;
-      names.push(ing.name);
+    INGREDIENTS.forEach(ing => {
+      const qty = quantities[ing.id] || 0;
+      if (qty <= 0) return;
+      calories += ing.calories * qty;
+      protein += ing.protein * qty;
+      carbs += ing.carbs * qty;
+      fat += ing.fat * qty;
+      itemCount += qty;
+      summary.push(qty > 1 ? `${ing.name} ×${qty}` : ing.name);
     });
 
     totalCaloriesEl.textContent = Math.round(calories);
@@ -419,9 +633,10 @@
     totalCarbsEl.textContent = round1(carbs);
     totalFatEl.textContent = round1(fat);
 
-    itemCountEl.textContent = `${selected.size} item${selected.size === 1 ? "" : "s"} on your plate`;
-    selectedItemsEl.textContent = names.length ? names.join(", ") : "Nothing selected yet.";
-    resetBtn.disabled = selected.size === 0;
+    itemCountEl.textContent = `${itemCount} item${itemCount === 1 ? "" : "s"} on your plate`;
+    selectedItemsEl.textContent = summary.length ? summary.join(", ") : "Nothing selected yet.";
+    resetBtn.disabled = itemCount === 0;
+    finalizeBtn.disabled = itemCount === 0;
   }
 
   function round1(n){
@@ -429,12 +644,196 @@
   }
 
   resetBtn.addEventListener("click", () => {
-    selected.clear();
-    document.querySelectorAll(".ingredient.selected").forEach(el => {
+    Object.keys(quantities).forEach(id => quantities[id] = 0);
+    document.querySelectorAll(".ingredient").forEach(el => {
       el.classList.remove("selected");
       el.setAttribute("aria-pressed", "false");
+      el.querySelector(".qty").textContent = "0";
+      el.querySelector(".stepper button").disabled = true;
     });
     updateTotals();
+  });
+
+  /* ---- Finalize menu: draw a summary card onto a canvas ---- */
+
+  function buildMealItems(){
+    const items = [];
+    let calories = 0, protein = 0, carbs = 0, fat = 0;
+
+    INGREDIENTS.forEach(ing => {
+      const qty = quantities[ing.id] || 0;
+      if (qty <= 0) return;
+      const lineCalories = ing.calories * qty;
+      const lineProtein = ing.protein * qty;
+      const lineCarbs = ing.carbs * qty;
+      const lineFat = ing.fat * qty;
+      calories += lineCalories;
+      protein += lineProtein;
+      carbs += lineCarbs;
+      fat += lineFat;
+      items.push({
+        name: ing.name,
+        serving: ing.serving || "",
+        qty,
+        calories: lineCalories,
+        protein: lineProtein,
+        carbs: lineCarbs,
+        fat: lineFat
+      });
+    });
+
+    return { items, calories, protein, carbs, fat };
+  }
+
+  function drawMealCard(){
+    const { items, calories, protein, carbs, fat } = buildMealItems();
+
+    // Layout constants (drawn at 2x scale for crisp phone screens)
+    const scale = 2;
+    const width = 420 * scale;
+    const paddingX = 28 * scale;
+    const rowHeight = 34 * scale;
+    const headerHeight = 108 * scale;
+    const totalsHeight = 150 * scale;
+    const footerHeight = 40 * scale;
+    const height = headerHeight + (items.length * rowHeight) + totalsHeight + footerHeight;
+
+    finalizeCanvas.width = width;
+    finalizeCanvas.height = height;
+    const ctx = finalizeCanvas.getContext("2d");
+
+    const inkColor = "#2b2420";
+    const inkSoft = "#6b6055";
+    const paperColor = "#efe6d8";
+    const accent = "#a13d2b";
+    const lineColor = "#c9b99a";
+
+    // Background
+    ctx.fillStyle = paperColor;
+    ctx.fillRect(0, 0, width, height);
+
+    // Border
+    ctx.strokeStyle = inkColor;
+    ctx.lineWidth = 3 * scale;
+    ctx.strokeRect(1.5 * scale, 1.5 * scale, width - 3 * scale, height - 3 * scale);
+
+    let y = 34 * scale;
+
+    // Title
+    ctx.fillStyle = inkColor;
+    ctx.font = `bold ${20 * scale}px Georgia, serif`;
+    ctx.textAlign = "left";
+    ctx.fillText("Meal Summary", paddingX, y);
+
+    // Date
+    y += 24 * scale;
+    ctx.font = `${12 * scale}px Georgia, serif`;
+    ctx.fillStyle = inkSoft;
+    const dateStr = new Date().toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    ctx.fillText(dateStr, paddingX, y);
+
+    // Divider
+    y += 16 * scale;
+    ctx.strokeStyle = inkColor;
+    ctx.lineWidth = 2 * scale;
+    ctx.beginPath();
+    ctx.moveTo(paddingX, y);
+    ctx.lineTo(width - paddingX, y);
+    ctx.stroke();
+
+    // Itemized list
+    y += 26 * scale;
+    items.forEach(item => {
+      const label = item.qty > 1 ? `${item.name} ×${item.qty}` : item.name;
+
+      ctx.font = `bold ${13 * scale}px Georgia, serif`;
+      ctx.fillStyle = inkColor;
+      ctx.textAlign = "left";
+      ctx.fillText(label, paddingX, y);
+
+      if (item.serving){
+        ctx.font = `italic ${10.5 * scale}px Georgia, serif`;
+        ctx.fillStyle = inkSoft;
+        ctx.fillText(`per ${item.serving}`, paddingX, y + 13 * scale);
+      }
+
+      ctx.font = `${12.5 * scale}px 'Courier New', monospace`;
+      ctx.fillStyle = inkColor;
+      ctx.textAlign = "right";
+      ctx.fillText(`${Math.round(item.calories)} kcal`, width - paddingX, y);
+
+      ctx.font = `${10 * scale}px 'Courier New', monospace`;
+      ctx.fillStyle = inkSoft;
+      ctx.fillText(
+        `P ${round1(item.protein)}g  C ${round1(item.carbs)}g  F ${round1(item.fat)}g`,
+        width - paddingX, y + 13 * scale
+      );
+
+      y += rowHeight;
+    });
+
+    // Divider before totals
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2 * scale;
+    ctx.setLineDash([6 * scale, 5 * scale]);
+    ctx.beginPath();
+    ctx.moveTo(paddingX, y);
+    ctx.lineTo(width - paddingX, y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Totals block
+    y += 30 * scale;
+    ctx.font = `bold ${15 * scale}px Georgia, serif`;
+    ctx.fillStyle = inkColor;
+    ctx.textAlign = "left";
+    ctx.fillText("Total", paddingX, y);
+
+    ctx.font = `bold ${24 * scale}px 'Courier New', monospace`;
+    ctx.fillStyle = accent;
+    ctx.textAlign = "right";
+    ctx.fillText(`${Math.round(calories)} kcal`, width - paddingX, y);
+
+    y += 26 * scale;
+    ctx.font = `${13 * scale}px 'Courier New', monospace`;
+    ctx.fillStyle = inkColor;
+    ctx.textAlign = "left";
+    ctx.fillText(`Protein: ${round1(protein)} g`, paddingX, y);
+
+    y += 20 * scale;
+    ctx.fillText(`Carbs: ${round1(carbs)} g`, paddingX, y);
+
+    y += 20 * scale;
+    ctx.fillText(`Fat: ${round1(fat)} g`, paddingX, y);
+
+    // Footer
+    y = height - 16 * scale;
+    ctx.font = `${10 * scale}px Georgia, serif`;
+    ctx.fillStyle = inkSoft;
+    ctx.textAlign = "center";
+    ctx.fillText("Ingredient Tracker", width / 2, y);
+  }
+
+  finalizeBtn.addEventListener("click", () => {
+    drawMealCard();
+    finalizeCanvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      const dateForFile = new Date().toISOString().slice(0, 10);
+      downloadLink.download = `meal-summary-${dateForFile}.png`;
+    }, "image/png");
+    finalizeOverlay.classList.add("open");
+  });
+
+  closeFinalizeBtn.addEventListener("click", () => {
+    finalizeOverlay.classList.remove("open");
+    if (downloadLink.href) URL.revokeObjectURL(downloadLink.href);
+  });
+
+  finalizeOverlay.addEventListener("click", (e) => {
+    if (e.target === finalizeOverlay){
+      finalizeOverlay.classList.remove("open");
+    }
   });
 
   renderGrid();
