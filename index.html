@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ingredient Tracker</title>
+<style>
+
+  :root{
+    --paper: #efe6d8;
+    --paper-dark: #e2d5bf;
+    --ink: #2b2420;
+    --ink-soft: #6b6055;
+    --line: #c9b99a;
+    --accent: #a13d2b;
+    --accent-soft: #d9cbb0;
+    --selected: #f7efe0;
+    --mono: 'Courier New', Courier, monospace;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* subtle paper texture using layered gradients */
+  body{
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(255,255,255,0.35), transparent 40%),
+      radial-gradient(circle at 80% 60%, rgba(0,0,0,0.03), transparent 45%);
+  }
+
+  header{
+    padding: 2.5rem 1.5rem 1.5rem;
+    text-align: left;
+    max-width: 1100px;
+    margin: 0 auto;
+    border-bottom: 3px solid var(--ink);
+  }
+
+  header h1{
+    font-size: 2.1rem;
+    margin: 0 0 0.35rem;
+    letter-spacing: 0.01em;
+    font-weight: 700;
+  }
+
+  header p{
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+    max-width: 46ch;
+  }
+
+  .layout{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 4rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+
+  @media (min-width: 860px){
+    .layout{
+      grid-template-columns: 1fr 320px;
+      align-items: start;
+    }
+  }
+
+  /* ---- Ingredient grid ---- */
+
+  #ingredient-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.9rem;
+  }
+
+  .ingredient{
+    background: var(--paper-dark);
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    padding: 0.6rem 0.6rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    user-select: none;
+  }
+
+  .ingredient:hover{
+    transform: translateY(-2px);
+  }
+
+  .ingredient:focus-visible{
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .ingredient .thumb{
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border: 1px solid var(--line);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .ingredient .thumb img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ingredient .thumb .fallback{
+    font-size: 2rem;
+  }
+
+  .ingredient .name{
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .ingredient .kcal-tag{
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    margin-top: 0.15rem;
+  }
+
+  .ingredient.selected{
+    background: var(--selected);
+    border-color: var(--accent);
+    box-shadow: 4px 4px 0 var(--accent);
+  }
+
+  .ingredient.selected::after{
+    content: "✓ added";
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    background: var(--selected);
+    padding: 0 3px;
+  }
+
+  /* ---- Totals panel ---- */
+
+  #totals-panel{
+    background: var(--ink);
+    color: var(--paper);
+    padding: 1.5rem;
+    position: sticky;
+    top: 1.5rem;
+    border: 2px solid var(--ink);
+  }
+
+  #totals-panel h2{
+    margin: 0 0 0.2rem;
+    font-size: 1.1rem;
+    font-family: Georgia, serif;
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+    padding-bottom: 0.6rem;
+  }
+
+  #totals-panel .count{
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: #c9bfae;
+    margin-bottom: 1rem;
+  }
+
+  .totals-list{
+    list-style: none;
+    margin: 0 0 1.25rem;
+    padding: 0;
+  }
+
+  .totals-list li{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.18);
+  }
+
+  .totals-list li .label{
+    font-size: 0.85rem;
+    color: #d8cfc0;
+  }
+
+  .totals-list li .value{
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    font-weight: bold;
+  }
+
+  .totals-list li.kcal-row .value{
+    font-size: 1.5rem;
+    color: #f2b79a;
+  }
+
+  .totals-list li.kcal-row .label{
+    font-size: 0.95rem;
+    color: var(--paper);
+  }
+
+  #selected-items{
+    font-size: 0.78rem;
+    color: #b7ac9a;
+    line-height: 1.6;
+    min-height: 1.5em;
+  }
+
+  #reset-btn{
+    margin-top: 1.1rem;
+    width: 100%;
+    background: transparent;
+    border: 1px solid #8a7c66;
+    color: var(--paper);
+    padding: 0.55rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+  }
+
+  #reset-btn:hover{
+    background: rgba(255,255,255,0.08);
+  }
+
+  #reset-btn:disabled{
+    opacity: 0.4;
+    cursor: default;
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ingredient Tracker</h1>
+  <p>Tap an ingredient to add it to your plate. Tap it again to take it back off.</p>
+</header>
+
+<div class="layout">
+
+  <div id="ingredient-grid"></div>
+
+  <aside id="totals-panel">
+    <h2>Running total</h2>
+    <div class="count" id="item-count">0 items on your plate</div>
+
+    <ul class="totals-list">
+      <li class="kcal-row">
+        <span class="label">Calories</span>
+        <span class="value"><span id="total-calories">0</span> kcal</span>
+      </li>
+      <li>
+        <span class="label">Protein</span>
+        <span class="value"><span id="total-protein">0</span> g</span>
+      </li>
+      <li>
+        <span class="label">Carbs</span>
+        <span class="value"><span id="total-carbs">0</span> g</span>
+      </li>
+      <li>
+        <span class="label">Fat</span>
+        <span class="value"><span id="total-fat">0</span> g</span>
+      </li>
+    </ul>
+
+    <div id="selected-items">Nothing selected yet.</div>
+
+    <button id="reset-btn" disabled>Clear plate</button>
+  </aside>
+
+</div>
+
+<script>
+
+  /* ============================================================
+     INGREDIENT DATA
+     ------------------------------------------------------------
+     Add, remove, or edit ingredients here. Each entry needs:
+
+       id       - unique short string, no spaces
+       name     - display name
+       image    - path to an image file (put images in an
+                  "images" folder next to this index.html), OR
+                  leave as "" to show the emoji fallback instead
+       emoji    - shown if "image" is empty or fails to load
+       calories - kcal, per the portion you're tracking
+       protein  - grams
+       carbs    - grams
+       fat      - grams
+
+     Nutrition values are per whatever unit/portion you want
+     (e.g. "per 100g" or "per 1 egg") - just be consistent about
+     what portion size each image represents, since clicking adds
+     exactly one portion's worth of values.
+     ============================================================ */
+
+  const INGREDIENTS = [
+    { id: "egg",        name: "Egg (1 large)",     image: "", emoji: "🥚", calories: 72,  protein: 6.3, carbs: 0.4,  fat: 4.8 },
+    { id: "chicken",    name: "Chicken Breast",    image: "", emoji: "🍗", calories: 165, protein: 31,  carbs: 0,    fat: 3.6 },
+    { id: "rice",       name: "Rice, cooked",      image: "", emoji: "🍚", calories: 206, protein: 4.3, carbs: 45,   fat: 0.4 },
+    { id: "avocado",    name: "Avocado",           image: "", emoji: "🥑", calories: 240, protein: 3,   carbs: 12,   fat: 22  },
+    { id: "banana",     name: "Banana",            image: "", emoji: "🍌", calories: 105, protein: 1.3, carbs: 27,   fat: 0.4 },
+    { id: "almonds",    name: "Almonds (28g)",     image: "", emoji: "🌰", calories: 164, protein: 6,   carbs: 6,    fat: 14  },
+    { id: "broccoli",   name: "Broccoli",          image: "", emoji: "🥦", calories: 55,  protein: 3.7, carbs: 11,   fat: 0.6 },
+    { id: "salmon",     name: "Salmon Fillet",     image: "", emoji: "🐟", calories: 208, protein: 20,  carbs: 0,    fat: 13  },
+    { id: "bread",      name: "Bread (1 slice)",   image: "", emoji: "🍞", calories: 79,  protein: 3.1, carbs: 14,   fat: 1   },
+    { id: "cheese",     name: "Cheddar Cheese",    image: "", emoji: "🧀", calories: 113, protein: 7,   carbs: 0.4,  fat: 9.3 },
+    { id: "apple",      name: "Apple",             image: "", emoji: "🍎", calories: 95,  protein: 0.5, carbs: 25,   fat: 0.3 },
+    { id: "peanutbutter", name: "Peanut Butter (2tbsp)", image: "", emoji: "🥜", calories: 188, protein: 8, carbs: 6, fat: 16 },
+  ];
+
+  /* ============================================================
+     APP LOGIC — you shouldn't need to touch anything below this
+     ============================================================ */
+
+  const selected = new Set();
+
+  const grid = document.getElementById("ingredient-grid");
+  const totalCaloriesEl = document.getElementById("total-calories");
+  const totalProteinEl = document.getElementById("total-protein");
+  const totalCarbsEl = document.getElementById("total-carbs");
+  const totalFatEl = document.getElementById("total-fat");
+  const itemCountEl = document.getElementById("item-count");
+  const selectedItemsEl = document.getElementById("selected-items");
+  const resetBtn = document.getElementById("reset-btn");
+
+  function renderGrid(){
+    grid.innerHTML = "";
+    INGREDIENTS.forEach(ing => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "ingredient";
+      card.dataset.id = ing.id;
+      card.setAttribute("aria-pressed", "false");
+
+      const thumb = document.createElement("div");
+      thumb.className = "thumb";
+
+      if (ing.image){
+        const img = document.createElement("img");
+        img.src = ing.image;
+        img.alt = ing.name;
+        img.onerror = () => {
+          thumb.innerHTML = `<span class="fallback">${ing.emoji || "🍽️"}</span>`;
+        };
+        thumb.appendChild(img);
+      } else {
+        thumb.innerHTML = `<span class="fallback">${ing.emoji || "🍽️"}</span>`;
+      }
+
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = ing.name;
+
+      const kcalTag = document.createElement("div");
+      kcalTag.className = "kcal-tag";
+      kcalTag.textContent = `${ing.calories} kcal`;
+
+      card.appendChild(thumb);
+      card.appendChild(name);
+      card.appendChild(kcalTag);
+
+      card.addEventListener("click", () => toggleIngredient(ing.id, card));
+
+      grid.appendChild(card);
+    });
+  }
+
+  function toggleIngredient(id, cardEl){
+    if (selected.has(id)){
+      selected.delete(id);
+      cardEl.classList.remove("selected");
+      cardEl.setAttribute("aria-pressed", "false");
+    } else {
+      selected.add(id);
+      cardEl.classList.add("selected");
+      cardEl.setAttribute("aria-pressed", "true");
+    }
+    updateTotals();
+  }
+
+  function updateTotals(){
+    let calories = 0, protein = 0, carbs = 0, fat = 0;
+    const names = [];
+
+    selected.forEach(id => {
+      const ing = INGREDIENTS.find(i => i.id === id);
+      if (!ing) return;
+      calories += ing.calories;
+      protein += ing.protein;
+      carbs += ing.carbs;
+      fat += ing.fat;
+      names.push(ing.name);
+    });
+
+    totalCaloriesEl.textContent = Math.round(calories);
+    totalProteinEl.textContent = round1(protein);
+    totalCarbsEl.textContent = round1(carbs);
+    totalFatEl.textContent = round1(fat);
+
+    itemCountEl.textContent = `${selected.size} item${selected.size === 1 ? "" : "s"} on your plate`;
+    selectedItemsEl.textContent = names.length ? names.join(", ") : "Nothing selected yet.";
+    resetBtn.disabled = selected.size === 0;
+  }
+
+  function round1(n){
+    return Math.round(n * 10) / 10;
+  }
+
+  resetBtn.addEventListener("click", () => {
+    selected.clear();
+    document.querySelectorAll(".ingredient.selected").forEach(el => {
+      el.classList.remove("selected");
+      el.setAttribute("aria-pressed", "false");
+    });
+    updateTotals();
+  });
+
+  renderGrid();
+  updateTotals();
+
+</script>
+
+</body>
+</html>
