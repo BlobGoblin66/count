@@ -517,7 +517,8 @@
 
   function renderGrid(){
     grid.innerHTML = "";
-    INGREDIENTS.forEach(ing => {
+    const sortedIngredients = [...INGREDIENTS].sort((a, b) => a.name.localeCompare(b.name));
+    sortedIngredients.forEach(ing => {
       const card = document.createElement("button");
       card.type = "button";
       card.className = "ingredient";
@@ -584,12 +585,34 @@
       card.appendChild(stepper);
 
       // Clicking anywhere else on the card adds one serving
-      card.addEventListener("click", () => changeQuantity(ing.id, 1, card, qtyDisplay, minusBtn));
+      card.addEventListener("click", () => toggleCard(ing.id, card, qtyDisplay, minusBtn));
 
       minusBtn.disabled = true;
 
       grid.appendChild(card);
     });
+  }
+
+  function toggleCard(id, cardEl, qtyDisplayEl, minusBtnEl){
+    const current = quantities[id] || 0;
+
+    if (current > 0){
+      // already on the plate — remove it entirely
+      quantities[id] = 0;
+      qtyDisplayEl.textContent = "0";
+      minusBtnEl.disabled = true;
+      cardEl.classList.remove("selected");
+      cardEl.setAttribute("aria-pressed", "false");
+    } else {
+      // not on the plate — add one
+      quantities[id] = 1;
+      qtyDisplayEl.textContent = "1";
+      minusBtnEl.disabled = false;
+      cardEl.classList.add("selected");
+      cardEl.setAttribute("aria-pressed", "true");
+    }
+
+    updateTotals();
   }
 
   function changeQuantity(id, delta, cardEl, qtyDisplayEl, minusBtnEl){
