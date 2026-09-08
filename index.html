@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>bing bong</title>
 <style>
@@ -28,8 +27,6 @@
     font-family: Helvetica, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-
-
 
   header{
     padding: 2.5rem 1.5rem 1.5rem;
@@ -68,6 +65,9 @@
       align-items: start;
     }
   }
+
+  /* Mobile: pin the totals panel to the bottom of the screen so it's
+     always visible without scrolling up and down */
   @media (max-width: 859px){
     #totals-panel{
       position: fixed;
@@ -83,9 +83,14 @@
     }
 
     .layout{
-      padding-bottom: 35vh; /* stops the ingredient grid from being hidden behind the fixed panel */
+      padding-bottom: 36vh; /* keeps the last row of ingredients from hiding behind the fixed panel */
+    }
+
+    #selected-items{
+      display: none; /* hidden on mobile to save vertical space; count + summary is combined instead */
     }
   }
+
   /* ---- Ingredient grid ---- */
 
   #ingredient-grid{
@@ -224,18 +229,19 @@
     font-size: 0.95rem;
     min-width: 1.4em;
     text-align: center;
-    color: var(--accent1);
+    color: var(--foreground);
   }
 
   /* ---- Totals panel ---- */
 
   #totals-panel{
-    background: var(--background);
+    background: var(--foreground);
     color: var(--text1);
     padding: 0.9rem;
     position: sticky;
     top: 1.5rem;
     border: 2px solid var(--accent1);
+    border-top: 4px solid var(--highlight);
   }
 
   #totals-panel h2{
@@ -255,35 +261,60 @@
 
   .totals-list{
     list-style: none;
-    margin: 0 0 0.06rem;
+    margin: 0 0 0.6rem;
     padding: 0;
   }
 
-  .totals-list li{
+  .totals-list li.cal-row{
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 0.25rem 0;
-    border-bottom: 1px dashed rgba(255,255,255,0.18);
-  }
-
-  .totals-list li .label{
-    font-size: 0.85rem;
-    color: var(--text1);
-  }
-
-  .totals-list li .value{
-    font-family: var(--mono);
-    font-size: 1.05rem;
-    font-weight: bold;
-  }
-
-  .totals-list li.cal-row .value{
-    font-size: 1.5rem;
-    color: var(--text1);
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.2rem 0 0.5rem;
+    border-bottom: none;
+    gap: 0;
   }
 
   .totals-list li.cal-row .label{
+    font-size: 0.75rem;
+    color: var(--text1);
+    opacity: 0.85;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .totals-list li.cal-row .value{
+    font-size: 2.2rem;
+    font-family: var(--mono);
+    font-weight: bold;
+    color: var(--text1);
+  }
+
+  .macro-row{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .macro{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.4rem 0.2rem;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .macro .label{
+    font-size: 0.68rem;
+    color: var(--text1);
+    opacity: 0.8;
+  }
+
+  .macro .value{
+    font-family: var(--mono);
+    font-weight: bold;
     font-size: 0.95rem;
     color: var(--text1);
   }
@@ -300,7 +331,7 @@
     width: 100%;
     background: transparent;
     border: 1px solid var(--accent1);
-    color: var(background);
+    color: var(--highlight);
     padding: 0.55rem;
     font-family: var(--mono);
     font-size: 0.78rem;
@@ -320,7 +351,7 @@
   #finalize-btn{
     margin-top: 0.6rem;
     width: 100%;
-    background: var(--foreground);
+    background: var(--background);
     border: 1px solid var(--accent1);
     color: var(--text1);
     padding: 0.7rem;
@@ -436,19 +467,22 @@
         <span class="label">Calories</span>
         <span class="value"><span id="total-calories">0</span> cal</span>
       </li>
-      <li>
-        <span class="label">Protein</span>
-        <span class="value"><span id="total-protein">0</span> g</span>
-      </li>
-      <li>
-        <span class="label">Carbs</span>
-        <span class="value"><span id="total-carbs">0</span> g</span>
-      </li>
-      <li>
-        <span class="label">Fat</span>
-        <span class="value"><span id="total-fat">0</span> g</span>
-      </li>
     </ul>
+
+    <div class="macro-row">
+      <div class="macro">
+        <span class="label">Protein</span>
+        <span class="value"><span id="total-protein">0</span>g</span>
+      </div>
+      <div class="macro">
+        <span class="label">Carbs</span>
+        <span class="value"><span id="total-carbs">0</span>g</span>
+      </div>
+      <div class="macro">
+        <span class="label">Fat</span>
+        <span class="value"><span id="total-fat">0</span>g</span>
+      </div>
+    </div>
 
     <div id="selected-items">Nothing selected yet.</div>
 
@@ -493,6 +527,9 @@
      Nutrition values are per ONE serving. If someone sets the
      quantity to 2, all four values are simply doubled - so make
      sure "serving" accurately describes what one unit means.
+
+     Ingredients are automatically sorted alphabetically on the
+     page, so you can add them here in any order you like.
      ============================================================ */
 
   const INGREDIENTS = [
@@ -604,7 +641,7 @@
       card.appendChild(calTag);
       card.appendChild(stepper);
 
-      // Clicking anywhere else on the card adds one serving
+      // Clicking anywhere else on the card toggles it on/off
       card.addEventListener("click", () => toggleCard(ing.id, card, qtyDisplay, minusBtn));
 
       minusBtn.disabled = true;
@@ -675,7 +712,8 @@
     totalCarbsEl.textContent = round1(carbs);
     totalFatEl.textContent = round1(fat);
 
-    itemCountEl.textContent = `${itemCount} item${itemCount === 1 ? "" : "s"} on your plate`;
+    const summaryText = summary.length ? summary.join(", ") : "empty";
+    itemCountEl.textContent = `${itemCount} item${itemCount === 1 ? "" : "s"} · ${summaryText}`;
     selectedItemsEl.textContent = summary.length ? summary.join(", ") : "Nothing selected yet.";
     resetBtn.disabled = itemCount === 0;
     finalizeBtn.disabled = itemCount === 0;
