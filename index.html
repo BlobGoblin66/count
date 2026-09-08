@@ -664,7 +664,7 @@
 
       const serving = document.createElement("div");
       serving.className = "serving";
-      serving.textContent = ing.serving ? `per ${ing.serving}` : "";
+      serving.textContent = ing.serving ? ing.serving : "";
 
       const calTag = document.createElement("div");
       calTag.className = "cal-tag";
@@ -895,7 +895,7 @@
       if (item.serving){
         ctx.font = `italic ${10.5 * scale}px Georgia, serif`;
         ctx.fillStyle = inkSoft;
-        ctx.fillText(`per ${item.serving}`, paddingX, y + 13 * scale);
+        ctx.fillText(item.serving, paddingX, y + 13 * scale);
       }
 
       ctx.font = `${12.5 * scale}px 'Courier New', monospace`;
