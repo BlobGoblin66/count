@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
 <title>bing bong</title>
 <style>
 
@@ -66,7 +68,24 @@
       align-items: start;
     }
   }
+  @media (max-width: 859px){
+    #totals-panel{
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 45vh;
+      overflow-y: auto;
+      z-index: 50;
+      border-left: none;
+      border-right: none;
+      border-bottom: none;
+    }
 
+    .layout{
+      padding-bottom: 46vh; /* stops the ingredient grid from being hidden behind the fixed panel */
+    }
+  }
   /* ---- Ingredient grid ---- */
 
   #ingredient-grid{
@@ -205,6 +224,7 @@
     font-size: 0.95rem;
     min-width: 1.4em;
     text-align: center;
+    color: var(--accent1);
   }
 
   /* ---- Totals panel ---- */
