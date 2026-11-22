@@ -18,6 +18,25 @@
     --mono: Helvetica, sans-serif;
   }
 
+  .sort-bar{
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  color: var(--text1);
+  font-size: 0.85rem;
+}
+
+#sort-select{
+  background: var(--foreground);
+  color: var(--accent2);
+  border: 2px solid var(--accent1);
+  padding: 0.35rem 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
   *{ box-sizing: border-box; }
 
   body{
@@ -515,7 +534,17 @@
 
 <div class="layout">
 
+  <div>
+  <div class="sort-bar">
+    <label for="sort-select">Sort by</label>
+    <select id="sort-select">
+      <option value="alpha">Alphabetical</option>
+      <option value="protein">Highest protein</option>
+      <option value="calories">Lowest calorie</option>
+    </select>
+  </div>
   <div id="ingredient-grid"></div>
+</div>
 
   <aside id="totals-panel">
     <h2>Running total</h2>
@@ -998,6 +1027,24 @@
     }
   });
 
+  const sortSelect = document.getElementById("sort-select");
+
+const SORTERS = {
+  alpha:    (a, b) => a.name.localeCompare(b.name),
+  protein:  (a, b) => b.protein - a.protein || a.name.localeCompare(b.name),
+  calories: (a, b) => a.calories - b.calories || a.name.localeCompare(b.name)
+};
+
+function applySort(){
+  const sorter = SORTERS[sortSelect.value];
+  [...INGREDIENTS].sort(sorter).forEach(ing => {
+    const card = grid.querySelector(`[data-id="${ing.id}"]`);
+    if (card) grid.appendChild(card);   // moves the existing card, keeping its selected state
+  });
+}
+
+sortSelect.addEventListener("change", applySort);
+  
   renderGrid();
   updateTotals();
 
